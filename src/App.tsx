@@ -9,25 +9,28 @@ import VisualizerPage from "./pages/VisualizerPage";
 import ComparePage from "./pages/ComparePage";
 import LearnPage from "./pages/LearnPage";
 import NotFound from "./pages/NotFound";
+import { ThemeProvider } from "./providers/ThemeProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/visualizer" element={<VisualizerPage />} />
-          <Route path="/compare" element={<ComparePage />} />
-          <Route path="/learn" element={<LearnPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ThemeProvider defaultTheme="system">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/visualizer" element={<VisualizerPage />} />
+            <Route path="/compare" element={<ComparePage />} />
+            <Route path="/learn" element={<LearnPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

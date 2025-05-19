@@ -64,13 +64,13 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				graph: {
-					node: '#3b82f6',
-					selectedNode: '#8b5cf6',
-					edge: '#94a3b8',
-					selectedEdge: '#6366f1',
-					highlight: '#14b8a6',
-					visitedNode: '#10b981',
-					background: '#f9fafb'
+					node: 'hsl(var(--graph-node))',
+					selectedNode: 'hsl(var(--graph-selected-node))',
+					edge: 'hsl(var(--graph-edge))',
+					selectedEdge: 'hsl(var(--graph-selected-edge))',
+					highlight: 'hsl(var(--graph-highlight))',
+					visitedNode: 'hsl(var(--graph-visited-node))',
+					background: 'hsl(var(--graph-background))'
 				}
 			},
 			borderRadius: {

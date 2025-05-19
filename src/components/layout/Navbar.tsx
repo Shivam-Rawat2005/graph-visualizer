@@ -2,13 +2,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
   return (
-    <header className="bg-white shadow-sm border-b">
+    <header className="bg-background shadow-sm border-b">
       <div className="container flex justify-between items-center h-16">
         <Link to="/" className="flex items-center space-x-2">
-          <span className="font-bold text-xl bg-gradient-to-r from-blue-500 to-violet-500 text-transparent bg-clip-text">
+          <span className="font-bold text-xl bg-gradient-to-r from-purple-500 to-violet-500 text-transparent bg-clip-text">
             GraphViz
           </span>
         </Link>
@@ -28,7 +29,8 @@ const Navbar = () => {
           </Link>
         </nav>
         
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center space-x-4">
+          <ThemeToggle />
           <Button asChild variant="default" size="sm">
             <Link to="/visualizer">Try It Now</Link>
           </Button>
@@ -53,6 +55,10 @@ const Navbar = () => {
           <Link to="/learn" className="flex flex-col items-center p-2">
             <span className="text-xs font-medium">Learn</span>
           </Link>
+          <Separator orientation="vertical" className="h-8" />
+          <div className="flex flex-col items-center p-2">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
