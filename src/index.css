@@ -6,13 +6,13 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    --foreground: 267 75% 60%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 267 75% 60%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
+    --popover-foreground: 267 75% 60%;
 
     --primary: 267 75% 60%;
     --primary-foreground: 0 0% 100%;
@@ -21,7 +21,7 @@
     --secondary-foreground: 0 0% 98%;
 
     --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
+    --muted-foreground: 267 75% 60%;
 
     --accent: 267 75% 95%;
     --accent-foreground: 240 5.9% 10%;
@@ -54,50 +54,50 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 0%;
+    --foreground: 267 75% 75%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 0%;
+    --card-foreground: 267 75% 75%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 267 75% 75%;
 
-    --primary: 267 75% 60%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 267 75% 75%;
+    --primary-foreground: 0 0% 0%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 0 0% 10%;
+    --secondary-foreground: 267 75% 75%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 267 75% 65%;
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 267 75% 15%;
+    --accent-foreground: 267 75% 75%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 267 75% 60%;
+    --border: 267 75% 25%;
+    --input: 0 0% 20%;
+    --ring: 267 75% 75%;
 
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 267 75% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 267 75% 60%;
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 267 75% 75%;
+    --sidebar-primary: 267 75% 75%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 267 75% 75%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 267 75% 75%;
 
-    --graph-node: 267 75% 60%;
+    --graph-node: 267 75% 75%;
     --graph-selected-node: 267 85% 80%;
-    --graph-edge: 240 10% 80%;
+    --graph-edge: 267 30% 75%;
     --graph-selected-edge: 267 75% 60%;
     --graph-highlight: 267 75% 60%;
     --graph-visited-node: 267 75% 70%;
-    --graph-background: 240 10% 5%;
+    --graph-background: 0 0% 0%;
   }
 }
 
