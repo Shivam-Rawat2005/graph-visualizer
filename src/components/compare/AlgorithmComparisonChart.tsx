@@ -59,7 +59,11 @@ const AlgorithmComparisonChart: React.FC = () => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis label={{ value: 'Time (ms)', angle: -90, position: 'insideLeft' }} />
-                <Tooltip formatter={(value) => [`${value.toFixed(2)} ms`, 'Execution Time']} />
+                <Tooltip formatter={(value) => {
+                  // Ensure value is a number before calling toFixed
+                  const numValue = typeof value === 'number' ? value : parseFloat(String(value));
+                  return isNaN(numValue) ? [value, 'Execution Time'] : [`${numValue.toFixed(2)} ms`, 'Execution Time'];
+                }} />
                 <Legend />
                 <Bar dataKey="time" name="Execution Time (ms)" fill="#8b5cf6" />
               </BarChart>
