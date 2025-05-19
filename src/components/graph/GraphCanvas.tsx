@@ -1,13 +1,15 @@
-
 import { useRef, useState, useEffect, useMemo } from "react";
 import { useGraphStore } from "@/store/graphStore";
 import { useAlgorithmStore } from "@/store/algorithmStore";
-import { NodeId } from "@/types/graph";
+import { NodeId, Edge } from "@/types/graph";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Route, Navigation } from "lucide-react";
 
 const NODE_RADIUS = 20;
 const EDGE_HITBOX_WIDTH = 10;
+const PATH_HIGHLIGHT_COLOR = '#10b981'; // Green color for path
+const PATH_STROKE_WIDTH = 4;
 
 const GraphCanvas: React.FC = () => {
   const {
@@ -34,6 +36,9 @@ const GraphCanvas: React.FC = () => {
   const [mode, setMode] = useState<'select' | 'addNode' | 'addEdge'>('select');
   const [edgeStartNode, setEdgeStartNode] = useState<NodeId | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [hoveredNode, setHoveredNode] = useState<NodeId | null>(null);
+  const [hoveredEdge, setHoveredEdge] = useState<{ source: NodeId; target: NodeId } | null>(null);
+  const [showPathTo, setShowPathTo] = useState<NodeId | null>(null);
   
   // Get current algorithm step information
   const currentStep = useMemo(() => {
@@ -42,6 +47,14 @@ const GraphCanvas: React.FC = () => {
     }
     return algorithmResults[currentAlgorithm].steps[currentStepIndex];
   }, [currentAlgorithm, algorithmResults, currentStepIndex]);
+  
+  // Get path to show
+  const pathToDisplay = useMemo(() => {
+    if (!showPathTo || !currentAlgorithm || !algorithmResults[currentAlgorithm]) {
+      return null;
+    }
+    return algorithmResults[currentAlgorithm].paths[showPathTo] || null;
+  }, [showPathTo, currentAlgorithm, algorithmResults]);
   
   // Set up canvas resize observer
   useEffect(() => {
@@ -75,7 +88,7 @@ const GraphCanvas: React.FC = () => {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw edges
+    // First, draw all non-highlighted edges
     graph.edges.forEach(edge => {
       const sourceNode = graph.nodes.find(node => node.id === edge.source);
       const targetNode = graph.nodes.find(node => node.id === edge.target);
@@ -86,24 +99,41 @@ const GraphCanvas: React.FC = () => {
                         selectedEdge.source === edge.source && 
                         selectedEdge.target === edge.target;
       
-      // Determine if this edge is part of the path in the current step
-      let isHighlighted = false;
-      if (currentStep && currentStep.path) {
-        const path = currentStep.path;
-        for (let i = 0; i < path.length - 1; i++) {
-          if (path[i] === edge.source && path[i+1] === edge.target) {
-            isHighlighted = true;
+      const isHovered = hoveredEdge && 
+                       hoveredEdge.source === edge.source && 
+                       hoveredEdge.target === edge.target;
+      
+      // Check if this edge is part of the current path
+      let isInPath = false;
+      if (pathToDisplay && pathToDisplay.length > 1) {
+        for (let i = 0; i < pathToDisplay.length - 1; i++) {
+          if (pathToDisplay[i] === edge.source && pathToDisplay[i+1] === edge.target) {
+            isInPath = true;
             break;
           }
         }
       }
       
+      // Check if this edge is part of the algorithm's current path
+      let isInCurrentStepPath = false;
+      if (currentStep && currentStep.path) {
+        for (let i = 0; i < currentStep.path.length - 1; i++) {
+          if (currentStep.path[i] === edge.source && currentStep.path[i+1] === edge.target) {
+            isInCurrentStepPath = true;
+            break;
+          }
+        }
+      }
+      
+      // Skip drawing highlighted paths - we'll draw them last so they're on top
+      if (isInPath || isInCurrentStepPath) return;
+      
       // Determine edge color based on state
       let edgeColor;
-      if (isHighlighted) {
-        edgeColor = '#14b8a6'; // Highlight color
-      } else if (isSelected) {
+      if (isSelected) {
         edgeColor = '#8b5cf6'; // Selected color
+      } else if (isHovered) {
+        edgeColor = '#3b82f6'; // Hover color
       } else {
         edgeColor = '#94a3b8'; // Default color
       }
@@ -113,7 +143,7 @@ const GraphCanvas: React.FC = () => {
       ctx.moveTo(sourceNode.x, sourceNode.y);
       ctx.lineTo(targetNode.x, targetNode.y);
       ctx.strokeStyle = edgeColor;
-      ctx.lineWidth = isSelected ? 3 : 2;
+      ctx.lineWidth = isSelected || isHovered ? 3 : 2;
       ctx.stroke();
       
       // Draw weight
@@ -151,19 +181,105 @@ const GraphCanvas: React.FC = () => {
       ctx.fill();
     });
     
+    // Now draw highlighted paths on top
+    const drawPathEdges = (edges: Edge[], color: string, width: number) => {
+      edges.forEach(edge => {
+        const sourceNode = graph.nodes.find(node => node.id === edge.source);
+        const targetNode = graph.nodes.find(node => node.id === edge.target);
+        
+        if (!sourceNode || !targetNode) return;
+        
+        // Draw highlighted path edge
+        ctx.beginPath();
+        ctx.moveTo(sourceNode.x, sourceNode.y);
+        ctx.lineTo(targetNode.x, targetNode.y);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.stroke();
+        
+        // Draw arrow for path
+        const angle = Math.atan2(targetNode.y - sourceNode.y, targetNode.x - sourceNode.x);
+        const arrowX = targetNode.x - (NODE_RADIUS + 5) * Math.cos(angle);
+        const arrowY = targetNode.y - (NODE_RADIUS + 5) * Math.sin(angle);
+        
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(
+          arrowX - 12 * Math.cos(angle - Math.PI / 6),
+          arrowY - 12 * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.lineTo(
+          arrowX - 12 * Math.cos(angle + Math.PI / 6),
+          arrowY - 12 * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+      });
+    };
+    
+    // Gather all path edges to draw
+    if (pathToDisplay && pathToDisplay.length > 1) {
+      // Convert path nodes to edges
+      const pathEdges: Edge[] = [];
+      for (let i = 0; i < pathToDisplay.length - 1; i++) {
+        const sourceId = pathToDisplay[i];
+        const targetId = pathToDisplay[i+1];
+        const weight = graph.edges.find(
+          e => e.source === sourceId && e.target === targetId
+        )?.weight || 0;
+        
+        pathEdges.push({
+          source: sourceId,
+          target: targetId,
+          weight
+        });
+      }
+      
+      drawPathEdges(pathEdges, PATH_HIGHLIGHT_COLOR, PATH_STROKE_WIDTH);
+    }
+    
+    // Draw current step path from algorithm execution
+    if (currentStep && currentStep.path && currentStep.path.length > 1) {
+      // Convert path nodes to edges
+      const pathEdges: Edge[] = [];
+      for (let i = 0; i < currentStep.path.length - 1; i++) {
+        const sourceId = currentStep.path[i];
+        const targetId = currentStep.path[i+1];
+        const weight = graph.edges.find(
+          e => e.source === sourceId && e.target === targetId
+        )?.weight || 0;
+        
+        pathEdges.push({
+          source: sourceId,
+          target: targetId,
+          weight
+        });
+      }
+      
+      drawPathEdges(pathEdges, '#8b5cf6', PATH_STROKE_WIDTH);
+    }
+    
     // Draw nodes
     graph.nodes.forEach(node => {
       // Check node status based on algorithm state
       const isSource = node.id === sourceNode;
       const isTarget = node.id === targetNode;
       const isSelected = node.id === selectedNode;
+      const isHovered = node.id === hoveredNode;
       const isVisited = currentStep?.visitedNodes?.includes(node.id);
       const isCurrent = currentStep?.currentNode === node.id;
+      const isInPath = pathToDisplay?.includes(node.id);
       
       // Determine node color based on state
       let nodeColor;
+      let nodeStrokeWidth = 1;
+      
       if (isCurrent) {
         nodeColor = '#8b5cf6'; // Current node in purple
+      } else if (isInPath) {
+        nodeColor = '#10b981'; // Path node in green
+        nodeStrokeWidth = 3;
       } else if (isVisited) {
         nodeColor = '#10b981'; // Visited node in green
       } else if (isSource) {
@@ -172,6 +288,8 @@ const GraphCanvas: React.FC = () => {
         nodeColor = '#ef4444'; // Target node in red
       } else if (isSelected) {
         nodeColor = '#3b82f6'; // Selected node in blue
+      } else if (isHovered) {
+        nodeColor = '#60a5fa'; // Hovered node lighter blue
       } else {
         nodeColor = '#64748b'; // Default node in slate
       }
@@ -181,7 +299,7 @@ const GraphCanvas: React.FC = () => {
       ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
       ctx.fillStyle = nodeColor;
       ctx.fill();
-      ctx.lineWidth = isSelected ? 3 : 1;
+      ctx.lineWidth = isSelected ? 3 : nodeStrokeWidth;
       ctx.strokeStyle = isSelected ? '#1d4ed8' : '#475569';
       ctx.stroke();
       
@@ -241,7 +359,11 @@ const GraphCanvas: React.FC = () => {
     edgeStartNode,
     mousePos,
     mode,
-    currentStep
+    currentStep,
+    hoveredNode,
+    hoveredEdge,
+    pathToDisplay,
+    showPathTo
   ]);
   
   // Find node under cursor
@@ -355,6 +477,19 @@ const GraphCanvas: React.FC = () => {
     // If dragging a node, update its position
     if (dragNode) {
       updateNode(dragNode, { x, y });
+      return;
+    }
+    
+    // Check for node hover
+    const nodeId = findNodeAtPoint(x, y);
+    setHoveredNode(nodeId);
+    
+    // Check for edge hover if not hovering over a node
+    if (!nodeId) {
+      const edge = findEdgeAtPoint(x, y);
+      setHoveredEdge(edge);
+    } else {
+      setHoveredEdge(null);
     }
   };
   
@@ -388,6 +523,7 @@ const GraphCanvas: React.FC = () => {
   const handleDelete = () => {
     if (selectedNode) {
       removeNode(selectedNode);
+      setShowPathTo(null);
     } else if (selectedEdge) {
       removeEdge(selectedEdge.source, selectedEdge.target);
     }
@@ -427,10 +563,35 @@ const GraphCanvas: React.FC = () => {
     useGraphStore.getState().setTargetNode(selectedNode);
     toast.success(`Set ${selectedNode} as target node`);
   };
+  
+  // Show path to selected node
+  const handleShowPath = () => {
+    if (!selectedNode) return;
+    
+    // Can only show path if an algorithm has been run
+    if (!currentAlgorithm || !algorithmResults[currentAlgorithm]) {
+      toast.error("Run an algorithm first to see the path");
+      return;
+    }
+    
+    if (showPathTo === selectedNode) {
+      setShowPathTo(null); // Toggle off
+      toast.info(`Hiding path to ${selectedNode}`);
+    } else {
+      setShowPathTo(selectedNode);
+      const path = algorithmResults[currentAlgorithm].paths[selectedNode];
+      
+      if (!path || path.length <= 1) {
+        toast.warning(`No path exists to ${selectedNode}`);
+      } else {
+        toast.success(`Showing path to ${selectedNode}`);
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex space-x-2 mb-2">
+      <div className="flex flex-wrap gap-2 mb-2">
         <Button 
           onClick={() => setMode('select')}
           variant={mode === 'select' ? 'default' : 'outline'}
@@ -461,6 +622,17 @@ const GraphCanvas: React.FC = () => {
             <Button onClick={handleSetAsTarget} size="sm" variant="outline">
               Set as Target
             </Button>
+            {currentAlgorithm && algorithmResults[currentAlgorithm] && (
+              <Button
+                onClick={handleShowPath}
+                size="sm"
+                variant={showPathTo === selectedNode ? "default" : "outline"}
+                className="flex items-center gap-1"
+              >
+                <Route size={16} />
+                {showPathTo === selectedNode ? "Hide Path" : "Show Path"}
+              </Button>
+            )}
           </>
         )}
         
@@ -484,8 +656,8 @@ const GraphCanvas: React.FC = () => {
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={() => setDragNode(null)}
-          className="cursor-crosshair"
+          onMouseLeave={() => { setDragNode(null); setHoveredNode(null); setHoveredEdge(null); }}
+          className={`cursor-${mode === 'select' ? (dragNode ? 'grabbing' : 'grab') : 'crosshair'}`}
         />
         
         {mode === 'addNode' && (
@@ -497,6 +669,21 @@ const GraphCanvas: React.FC = () => {
         {mode === 'addEdge' && (
           <div className="absolute top-2 left-2 bg-white p-2 rounded shadow text-sm">
             Click on a source node, then click on a target node
+          </div>
+        )}
+        
+        {hoveredNode && !dragNode && mode === 'select' && (
+          <div className="absolute top-2 right-2 bg-white p-2 rounded shadow text-sm">
+            Node: {hoveredNode}
+            {currentAlgorithm && algorithmResults[currentAlgorithm]?.distances[hoveredNode] !== undefined && (
+              <div>
+                Distance: {
+                  algorithmResults[currentAlgorithm].distances[hoveredNode] === Infinity 
+                    ? "∞" 
+                    : algorithmResults[currentAlgorithm].distances[hoveredNode]
+                }
+              </div>
+            )}
           </div>
         )}
       </div>
