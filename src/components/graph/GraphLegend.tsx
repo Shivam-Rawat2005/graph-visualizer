@@ -13,6 +13,7 @@ const GraphLegend: React.FC = () => {
   const edgeLegendItems = [
     { color: '#94a3b8', label: 'Regular Edge' },
     { color: '#10b981', label: 'Path Edge', lineWidth: 4 },
+    { color: '#f59e0b', label: 'Final Shortest Path', lineWidth: 5 },
     { color: '#8b5cf6', label: 'Selected Edge', lineWidth: 3 },
   ];
 

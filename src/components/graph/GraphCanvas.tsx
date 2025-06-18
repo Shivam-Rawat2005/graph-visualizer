@@ -9,6 +9,7 @@ import { Route, Navigation } from "lucide-react";
 const NODE_RADIUS = 20;
 const EDGE_HITBOX_WIDTH = 10;
 const PATH_HIGHLIGHT_COLOR = '#10b981'; // Green color for path
+const FINAL_PATH_COLOR = '#f59e0b'; // Amber color for final shortest path
 const PATH_STROKE_WIDTH = 4;
 
 const GraphCanvas: React.FC = () => {
@@ -48,6 +49,15 @@ const GraphCanvas: React.FC = () => {
     return algorithmResults[currentAlgorithm].steps[currentStepIndex];
   }, [currentAlgorithm, algorithmResults, currentStepIndex]);
   
+  // Check if we're at the final step
+  const isAtFinalStep = useMemo(() => {
+    if (!currentAlgorithm || !algorithmResults[currentAlgorithm]) {
+      return false;
+    }
+    const totalSteps = algorithmResults[currentAlgorithm].steps.length;
+    return currentStepIndex === totalSteps - 1;
+  }, [currentAlgorithm, algorithmResults, currentStepIndex]);
+  
   // Get path to show
   const pathToDisplay = useMemo(() => {
     if (!showPathTo || !currentAlgorithm || !algorithmResults[currentAlgorithm]) {
@@ -55,6 +65,14 @@ const GraphCanvas: React.FC = () => {
     }
     return algorithmResults[currentAlgorithm].paths[showPathTo] || null;
   }, [showPathTo, currentAlgorithm, algorithmResults]);
+  
+  // Get final shortest path to target node
+  const finalPathToTarget = useMemo(() => {
+    if (!targetNode || !currentAlgorithm || !algorithmResults[currentAlgorithm] || !isAtFinalStep) {
+      return null;
+    }
+    return algorithmResults[currentAlgorithm].paths[targetNode] || null;
+  }, [targetNode, currentAlgorithm, algorithmResults, isAtFinalStep]);
   
   // Set up canvas resize observer
   useEffect(() => {
@@ -125,8 +143,19 @@ const GraphCanvas: React.FC = () => {
         }
       }
       
+      // Check if this edge is part of the final shortest path
+      let isInFinalPath = false;
+      if (finalPathToTarget && finalPathToTarget.length > 1) {
+        for (let i = 0; i < finalPathToTarget.length - 1; i++) {
+          if (finalPathToTarget[i] === edge.source && finalPathToTarget[i+1] === edge.target) {
+            isInFinalPath = true;
+            break;
+          }
+        }
+      }
+      
       // Skip drawing highlighted paths - we'll draw them last so they're on top
-      if (isInPath || isInCurrentStepPath) return;
+      if (isInPath || isInCurrentStepPath || isInFinalPath) return;
       
       // Determine edge color based on state
       let edgeColor;
@@ -260,6 +289,26 @@ const GraphCanvas: React.FC = () => {
       drawPathEdges(pathEdges, '#8b5cf6', PATH_STROKE_WIDTH);
     }
     
+    // Draw final shortest path with distinct color (highest priority)
+    if (finalPathToTarget && finalPathToTarget.length > 1) {
+      const pathEdges: Edge[] = [];
+      for (let i = 0; i < finalPathToTarget.length - 1; i++) {
+        const sourceId = finalPathToTarget[i];
+        const targetId = finalPathToTarget[i+1];
+        const weight = graph.edges.find(
+          e => e.source === sourceId && e.target === targetId
+        )?.weight || 0;
+        
+        pathEdges.push({
+          source: sourceId,
+          target: targetId,
+          weight
+        });
+      }
+      
+      drawPathEdges(pathEdges, FINAL_PATH_COLOR, PATH_STROKE_WIDTH + 1);
+    }
+    
     // Draw nodes
     graph.nodes.forEach(node => {
       // Check node status based on algorithm state
@@ -270,6 +319,7 @@ const GraphCanvas: React.FC = () => {
       const isVisited = currentStep?.visitedNodes?.includes(node.id);
       const isCurrent = currentStep?.currentNode === node.id;
       const isInPath = pathToDisplay?.includes(node.id);
+      const isInFinalPath = finalPathToTarget?.includes(node.id);
       
       // Determine node color based on state
       let nodeColor;
@@ -277,6 +327,9 @@ const GraphCanvas: React.FC = () => {
       
       if (isCurrent) {
         nodeColor = '#8b5cf6'; // Current node in purple
+      } else if (isInFinalPath && isAtFinalStep) {
+        nodeColor = '#f59e0b'; // Final path node in amber
+        nodeStrokeWidth = 3;
       } else if (isInPath) {
         nodeColor = '#10b981'; // Path node in green
         nodeStrokeWidth = 3;
@@ -363,7 +416,9 @@ const GraphCanvas: React.FC = () => {
     hoveredNode,
     hoveredEdge,
     pathToDisplay,
-    showPathTo
+    showPathTo,
+    finalPathToTarget,
+    isAtFinalStep
   ]);
   
   // Find node under cursor
